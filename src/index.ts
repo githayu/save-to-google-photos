@@ -1,23 +1,7 @@
 declare const OAuth2: any
 
-/*
- * This sample demonstrates how to configure the library for Google APIs, using
- * end-user authorization (Web Server flow).
- * https://developers.google.com/identity/protocols/OAuth2WebServer
- */
-function test() {
-  doGet({
-    parameter: {
-      url: 'https://via.placeholder.com/150',
-      name: 'name',
-      description: 'description',
-      albumName: 'albumName',
-    },
-  })
-}
-
 /**
- * Authorizes and makes a request to the Google Drive API.
+ * Authorizes and makes a request to the Google Photos API.
  */
 function doGet(e: any) {
   let status = false
@@ -50,7 +34,11 @@ function saveToPhotos({
 }) {
   const service = getService()
 
-  if (service.hasAccess() && url) {
+  if (service.hasAccess()) {
+    if (!url) {
+      throw new Error('URL is invalid')
+    }
+
     const accessToken = 'Bearer ' + service.getAccessToken()
     const payload = fetchImage(url)
     const uploadToken = uploadBytes({
@@ -59,7 +47,7 @@ function saveToPhotos({
       payload,
     })
 
-    console.log('uploadToken', uploadToken)
+    console.log('UploadToken:', uploadToken)
 
     let album
 
@@ -77,15 +65,16 @@ function saveToPhotos({
       accessToken,
       uploadToken,
       description,
-      albumId: album ? album.id : undefined,
+      albumId: album,
     })
 
-    console.log('createMediaItem', response)
+    console.log('MediaItem:', response)
   } else {
     const authorizationUrl = service.getAuthorizationUrl()
 
-    console.warn(
-      `Open the following URL and re-run the script: ${authorizationUrl}`
+    console.info(
+      'Open the following URL and re-run the script:',
+      authorizationUrl
     )
   }
 }
@@ -105,7 +94,7 @@ function getAlbums(accessToken: string) {
   if (statusCode === 200) {
     return JSON.parse(res.getContentText())
   } else {
-    throw new Error(`GetAlbumError: ${statusCode}`)
+    throw new Error(`GetAlbums: ${statusCode}`)
   }
 }
 
@@ -114,9 +103,9 @@ function createAlbum(accessToken: string, title: string) {
     'https://photoslibrary.googleapis.com/v1/albums',
     {
       method: 'post',
+      contentType: 'application/json',
       headers: {
         Authorization: accessToken,
-        'Content-Type': 'application/json',
       },
       payload: JSON.stringify({
         album: { title },
@@ -129,7 +118,7 @@ function createAlbum(accessToken: string, title: string) {
   if (statusCode === 200) {
     return JSON.parse(res.getContentText())
   } else {
-    throw new Error(`CreateAlbumError: ${statusCode}`)
+    throw new Error(`CreateAlbum: ${statusCode}`)
   }
 }
 
@@ -140,13 +129,12 @@ function uploadBytes({
 }: {
   accessToken: string
   name?: string
-  payload: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions['payload']
+  payload: GoogleAppsScript.Base.Blob
 }) {
   const headers: {
     [x: string]: string
   } = {
     Authorization: accessToken,
-    'Content-Type': 'application/octet-stream',
     'X-Goog-Upload-Protocol': 'raw',
   }
 
@@ -158,6 +146,7 @@ function uploadBytes({
     'https://photoslibrary.googleapis.com/v1/uploads',
     {
       method: 'post',
+      contentType: 'application/octet-stream',
       headers,
       payload,
     }
@@ -168,7 +157,7 @@ function uploadBytes({
   if (statusCode === 200) {
     return res.getContentText()
   } else {
-    throw new Error(`UploadBytesError: ${statusCode}`)
+    throw new Error(`UploadBytes: ${statusCode}`)
   }
 }
 
@@ -187,17 +176,17 @@ function createMediaItem({
     'https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate',
     {
       method: 'post',
+      contentType: 'application/json',
       headers: {
         Authorization: accessToken,
-        'Content-Type': 'application/json',
       },
       payload: JSON.stringify({
         albumId,
         newMediaItems: [
           {
-            description: description,
+            description,
             simpleMediaItem: {
-              uploadToken: uploadToken,
+              uploadToken,
             },
           },
         ],
@@ -210,7 +199,7 @@ function createMediaItem({
   if (statusCode === 200) {
     return JSON.parse(res.getContentText())
   } else {
-    throw new Error(`createMediaItemError: ${statusCode}`)
+    throw new Error(`CreateMediaItem: ${statusCode}`)
   }
 }
 
@@ -221,7 +210,7 @@ function fetchImage(url: string) {
   if (statusCode === 200) {
     return res.getBlob()
   } else {
-    throw new Error(`fetchImageError: ${statusCode}`)
+    throw new Error(`FetchImage: ${statusCode}`)
   }
 }
 
@@ -269,6 +258,7 @@ function getService() {
 function authCallback(request: any) {
   const service = getService()
   const authorized = service.handleCallback(request)
+
   if (authorized) {
     return HtmlService.createHtmlOutput('Success!')
   } else {
