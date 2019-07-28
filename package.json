@@ -1,0 +1,17 @@
+{
+  "name": "save-to-google-photos",
+  "version": "1.0.0",
+  "author": "Hayu <admin@hayu.io>",
+  "license": "MIT",
+  "scripts": {
+    "push": "clasp push",
+    "pull": "clasp pull"
+  },
+  "devDependencies": {
+    "@types/google-apps-script": "^0.0.54",
+    "prettier": "1.18.2"
+  },
+  "peerDependencies": {
+    "@google/clasp": "^2.2.1"
+  }
+}
