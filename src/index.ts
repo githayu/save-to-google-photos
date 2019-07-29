@@ -3,8 +3,10 @@ declare const OAuth2: any
 /**
  * Authorizes and makes a request to the Google Photos API.
  */
-function doGet(e: any) {
+function doPost(e: any) {
   let status = false
+
+  console.log('PostData:', e.parameter)
 
   try {
     saveToPhotos(e.parameter)
@@ -16,7 +18,7 @@ function doGet(e: any) {
 
   return ContentService.createTextOutput(
     JSON.stringify({
-      status: true,
+      status,
     })
   )
 }
@@ -47,8 +49,6 @@ function saveToPhotos({
       payload,
     })
 
-    console.log('UploadToken:', uploadToken)
-
     let album
 
     if (albumName) {
@@ -61,18 +61,20 @@ function saveToPhotos({
       }
     }
 
+    console.log('Album:', album)
+
     const response = createMediaItem({
       accessToken,
       uploadToken,
       description,
-      albumId: album,
+      albumId: album.id,
     })
 
     console.log('MediaItem:', response)
   } else {
     const authorizationUrl = service.getAuthorizationUrl()
 
-    console.info(
+    console.error(
       'Open the following URL and re-run the script:',
       authorizationUrl
     )
@@ -228,7 +230,7 @@ function getService() {
   const scriptProps = PropertiesService.getScriptProperties()
 
   return (
-    OAuth2.createService('Google')
+    OAuth2.createService('Photos')
       // Set the endpoint URLs.
       .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/v2/auth')
       .setTokenUrl('https://oauth2.googleapis.com/token')
@@ -242,13 +244,13 @@ function getService() {
       .setCallbackFunction('authCallback')
 
       // Set the property store where authorized tokens should be persisted.
-      .setPropertyStore(PropertiesService.getScriptProperties())
+      .setPropertyStore(scriptProps)
 
       // Set the scope and additional Google-specific parameters.
       .setScope('https://www.googleapis.com/auth/photoslibrary')
       .setParam('access_type', 'offline')
       .setParam('approval_prompt', 'auto')
-      .setParam('login_hint', Session.getActiveUser().getEmail())
+      .setParam('login_hint', scriptProps.getProperty('EMAIL'))
   )
 }
 
