@@ -3,6 +3,13 @@ declare const OAuth2: any
 /**
  * Authorizes and makes a request to the Google Photos API.
  */
+const auth = () => {
+  const service = getService()
+  const authorizationUrl = service.getAuthorizationUrl()
+
+  console.error('認証URL:', authorizationUrl)
+}
+
 function doPost(e: any) {
   let status = false
 
@@ -72,12 +79,7 @@ function saveToPhotos({
 
     console.log('MediaItem:', response)
   } else {
-    const authorizationUrl = service.getAuthorizationUrl()
-
-    console.error(
-      'Open the following URL and re-run the script:',
-      authorizationUrl
-    )
+    auth()
   }
 }
 
@@ -249,7 +251,7 @@ function getService() {
       // Set the scope and additional Google-specific parameters.
       .setScope('https://www.googleapis.com/auth/photoslibrary')
       .setParam('access_type', 'offline')
-      .setParam('approval_prompt', 'auto')
+      .setParam('prompt', 'consent')
       .setParam('login_hint', scriptProps.getProperty('EMAIL'))
   )
 }
